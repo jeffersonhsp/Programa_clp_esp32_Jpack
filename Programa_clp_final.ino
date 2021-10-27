@@ -7,46 +7,46 @@
 #include <ArduinoJson.h>
 #include "html_page.h"
 
-int currentmillis;
+int currentmillis;                      //variavel para guardar o valor atual de millis
 
-int currentmillis_foto;
-int atraso_faca = 100;;
-const char *ssid = "JPACK";
-const char *password = "10203040";
+int currentmillis_foto;                 //variavel para guardar o valor atual de millis
+int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+const char *ssid = "JPACK";             //ssid do server AP
+const char *password = "10203040";      //password do server AP
 
 
-uint8_t i;
+uint8_t i;                              //variavel auxiliar do laço de repetiçao
 
-uint16_t counter = 0;
+uint16_t counter = 0;                   //variavel auxiliar para o ciclo na interrupçao correspondente a confecçao de um pacote de 1...1000
 uint16_t vet[80];
 
-bool flag_estado = false;
-bool flag_estado_ciclo = false;
-bool flag_pedido = false;
-bool flag_espera_pdt = false;
-bool pressed = false;
-bool flag_p_aquecimento = false;
-bool flag_foto_millis = false;
+bool flag_estado = false;               //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop principal
+bool flag_estado_ciclo = false;         //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop da interrupçao
+bool flag_pedido = false;               //flag setada se a maquina pedir produto a balança
+bool flag_espera_pdt = false;           //flag setada apos a pedida de produto para a balança para armazenar o estado de espera
+bool pressed = false;                   //flag setada para guardar o estado atual do botao fisico LIGA_DESLIGA "flip flop"
+bool flag_p_aquecimento = false;        //flag setada para guardar o estado de pre aquecimento da solda vertical
+bool flag_foto_millis = false;          //flag setada para auxiliar no atraso da fotocelula sem precisar de "dalay"
 
-bool flag_emergencia = false;
-bool flag_falha_datador = false;
-bool flag_falha_bobinap = false;
-bool flag_falha_bobinaf = false;
-bool flag_falha_inversor = false;
-bool flag_falha_foto = false;
+bool flag_emergencia = false;           //flag da emergencia
+bool flag_falha_datador = false;        //flag do erro do datador
+bool flag_falha_bobinap = false;        //flag do erro de bobina presa
+bool flag_falha_bobinaf = false;        //flag do erro de bobina frouxa
+bool flag_falha_inversor = false;       //flag da falha dos inversores ligados em serie 
+bool flag_falha_foto = false;           //flag de falha caso nao detecte a targeta da fotocelula no filme
 
 
-String alarme = "";
+String alarme = "";                     //string auxiliar que armazena o nome do alarme para envio do Json para a IHM
 
-WebServer server(80);
+WebServer server(80);                   //seta o webserver na porta padra0 :80
 
-WebSocketsServer websockets(81);
+WebSocketsServer websockets(81);        //seta a conexao do websocket na porta :81 
 
-TaskHandle_t Task1;
-TaskHandle_t Task2;
+TaskHandle_t Task1;                     //cria  3 tasks para envio do json para a ihm, para corrigir um erro
+TaskHandle_t Task2;                     //que se mais de um usuario se conectasse a fechasse o navegador todos os usuarias conectador perdiam pacotes
 TaskHandle_t Task3;
 
-#define EEPROM_SIZE 100  // define the number of bytes you want to access
+#define EEPROM_SIZE 100                 //define o tamanho da EEPROM simulada, para gardar os dados oparacionais da maquina
 
 
 // do 0 ao 19 na eeprom valores dos tempos em uint16_t
@@ -123,8 +123,7 @@ uint16_t balanca_liga;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////  Configura interrupçao e timer 0 //////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned int timer_scaller = 0;
 unsigned int tmr = 0;
@@ -132,6 +131,8 @@ hw_timer_t * timer = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+//Inicio da interrupçao
 void cb_timer(){
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ - TRATAMENTO DO CICLO - @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@       
      
@@ -552,7 +553,7 @@ void loop(void) {
   
   if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
   
-  if(millis() >= (currentmillis_foto + atraso_faca) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
+  if(millis() >= (currentmillis_foto + atraso_foto) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
 
 /*
   if(millis()%33 == 0){  
