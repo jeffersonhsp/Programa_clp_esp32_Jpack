@@ -138,7 +138,7 @@ void cb_timer(){
 
      if(counter == tracionador_liga && hab_tracionador && !flag_espera_pdt){digitalWrite(out_tracionador,true); tracionador_off = (tracionador_tempo * velocidade / 60);}
      if(tracionador_off <= 0){digitalWrite(out_tracionador,false);} tracionador_off--;
-     if(tracionador_off == 1 && hab_foto)flag_falha_foto = true;
+     if(tracionador_off == 1 && hab_foto && flag_estado_ciclo)flag_falha_foto = true;
      
      if(counter == shorizontal_liga && hab_soldah && !flag_espera_pdt){digitalWrite(out_shorizontal,true); shorizontal_off = (shorizontal_tempo * velocidade / 60);}
      if(shorizontal_off <= 0){digitalWrite(out_shorizontal,false);} shorizontal_off--;
