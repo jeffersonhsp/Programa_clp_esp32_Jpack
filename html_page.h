@@ -797,7 +797,7 @@ body {
   document.getElementById("idh2").style.color = "#FF0000";
  }
  function voltar(){
-   window.location='/';
+   setTimeout(function(){ window.location='/'; }, 200);
  }
 </script>
 <head>
