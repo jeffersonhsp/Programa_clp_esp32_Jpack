@@ -11,7 +11,7 @@ int currentmillis;                      //variavel para guardar o valor atual de
 
 int currentmillis_foto;                 //variavel para guardar o valor atual de millis
 int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
-int delay_rele = 50;                    //anteipa o atraso do rele ao pedir produto a balança
+int delay_rele     ;                    //corrige atraso do rele ao pedir produto a balança
 const char *ssid = "JPACK";             //ssid do server AP
 const char *password = "10203040";      //password do server AP
 
@@ -152,7 +152,7 @@ void cb_timer(){
 
      if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60); }
      if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                                            //decrementa o tempo e desliga a saida quando zerar o tempo
-     if(counter == balança_liga+delay_rele && hab_balanca)flag_pedido = true;
+     if(counter == (balanca_liga + delay_rele) && hab_balanca)flag_pedido = true;
      
      if(!digitalRead(in_descarga))flag_pedido = false;                                                                  //se a balança respondeu seta flag
      if(flag_pedido)flag_espera_pdt = true;                                                                             //se flag setada descarga ja foi feita
@@ -385,7 +385,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if(doc["shorizontal_tempo"].as<long>()){shorizontal_tempo = doc["shorizontal_tempo"].as<long>();}
       if(doc["svertical_liga"].as<long>()){svertical_liga = doc["svertical_liga"].as<long>();}            
       if(doc["svertical_tempo"].as<long>()){svertical_tempo = doc["svertical_tempo"].as<long>();}
-      if(doc["balanca_liga"].as<long>()){t_queda = doc["balanca_liga"].as<long>();}
+      if(doc["balanca_liga"].as<long>()){t_queda = doc["balanca_liga"].as<long>(); delay_rele = 0;}
       if(doc["balanca_tempo"].as<long>()){balanca_tempo = doc["balanca_tempo"].as<long>();}
       if(doc["temperaturav_liga"].as<long>()){temperaturav_liga = doc["temperaturav_liga"].as<long>();}
       if(doc["temperaturav_tempo"].as<long>()){temperaturav_tempo = doc["temperaturav_tempo"].as<long>();}
@@ -557,7 +557,7 @@ void loop(void) {
   
      
   
-  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
+  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; delay_rele = counter - balanca_liga; }
   if(millis() >= (currentmillis_foto + atraso_foto) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
 
 
