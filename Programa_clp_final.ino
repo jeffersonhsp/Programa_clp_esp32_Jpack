@@ -154,7 +154,7 @@ void cb_timer(){
      if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                                            //decrementa o tempo e desliga a saida quando zerar o tempo
      if(counter == (balanca_liga + delay_rele) && hab_balanca)flag_pedido = true;
      
-     if(!digitalRead(in_descarga))flag_pedido = false;                                                                  //se a balança respondeu seta flag
+     if(!digitalRead(in_descarga)){flag_pedido = false;   delay_rele = counter - balanca_liga;}                         //se a balança respondeu seta flag
      if(flag_pedido)flag_espera_pdt = true;                                                                             //se flag setada descarga ja foi feita
      if(flag_espera_pdt && !flag_pedido){counter = (balanca_liga+delay_rele); flag_espera_pdt = false;}                 //se a maquina esta esperando produto e a descarga foi feira retoma o ciclo de onde parou quando pediu produto
      if(!hab_balanca && flag_pedido){flag_pedido = false; flag_espera_pdt = false; counter = (balanca_liga+delay_rele);}//se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
@@ -557,7 +557,7 @@ void loop(void) {
   
      
   
-  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; delay_rele = counter - balanca_liga; }
+  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
   if(millis() >= (currentmillis_foto + atraso_foto) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
 
 
