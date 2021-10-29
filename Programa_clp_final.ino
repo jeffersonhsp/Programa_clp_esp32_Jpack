@@ -11,6 +11,7 @@ int currentmillis;                      //variavel para guardar o valor atual de
 
 int currentmillis_foto;                 //variavel para guardar o valor atual de millis
 int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+int delay_rele = 50;                    //anteipa o atraso do rele ao pedir produto a balança
 const char *ssid = "JPACK";             //ssid do server AP
 const char *password = "10203040";      //password do server AP
 
@@ -139,40 +140,41 @@ void cb_timer(){
      
 
      if(counter == tracionador_liga && hab_tracionador && !flag_espera_pdt){digitalWrite(out_tracionador,true); tracionador_off = (tracionador_tempo * velocidade / 60);}
-     if(tracionador_off <= 0){digitalWrite(out_tracionador,false);} tracionador_off--;
+     if(tracionador_off <= 0){digitalWrite(out_tracionador,false);} tracionador_off--;                                                                //decrementa o tempo e desliga a saida quando zerar o tempo
      if(tracionador_off == 1 && hab_foto && flag_estado_ciclo)flag_falha_foto = true;
      
      if(counter == shorizontal_liga && hab_soldah && !flag_espera_pdt){digitalWrite(out_shorizontal,true); shorizontal_off = (shorizontal_tempo * velocidade / 60);}
-     if(shorizontal_off <= 0){digitalWrite(out_shorizontal,false);} shorizontal_off--;
+     if(shorizontal_off <= 0){digitalWrite(out_shorizontal,false);} shorizontal_off--;                                                                //decrementa o tempo e desliga a saida quando zerar o tempo
      
      if(counter == svertical_liga && hab_soldav && !flag_espera_pdt){digitalWrite(out_svertical,true); svertical_off = (svertical_tempo * velocidade / 60);}
-     if(svertical_off <= 0){digitalWrite(out_svertical,false);} svertical_off--;
+     if(svertical_off <= 0){digitalWrite(out_svertical,false);} svertical_off--;                                                                      //decrementa o tempo e desliga a saida quando zerar o tempo
 
 
-     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60); flag_pedido = true;}
-     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;
+     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60); }
+     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                                            //decrementa o tempo e desliga a saida quando zerar o tempo
+     if(counter == balança_liga+delay_rele && hab_balanca)flag_pedido = true;
      
-     if(!digitalRead(in_descarga))flag_pedido = false;
-     if(flag_pedido)flag_espera_pdt = true;
-     if(flag_espera_pdt && !flag_pedido){counter = balanca_liga; flag_espera_pdt = false;}
-     if(!hab_balanca && flag_pedido){flag_pedido = false; flag_espera_pdt = false; counter = balanca_liga;}
+     if(!digitalRead(in_descarga))flag_pedido = false;                                                                  //se a balança respondeu seta flag
+     if(flag_pedido)flag_espera_pdt = true;                                                                             //se flag setada descarga ja foi feita
+     if(flag_espera_pdt && !flag_pedido){counter = (balanca_liga+delay_rele); flag_espera_pdt = false;}                 //se a maquina esta esperando produto e a descarga foi feira retoma o ciclo de onde parou quando pediu produto
+     if(!hab_balanca && flag_pedido){flag_pedido = false; flag_espera_pdt = false; counter = (balanca_liga+delay_rele);}//se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
      
      
      
      if(counter == faca_liga && hab_faca && !flag_espera_pdt){digitalWrite(out_faca,true); faca_off = (faca_tempo * velocidade / 60);}
-     if(faca_off <= 0){digitalWrite(out_faca,false);} faca_off--;
+     if(faca_off <= 0){digitalWrite(out_faca,false);} faca_off--;                                                                                          //decrementa o tempo e desliga a saida quando zerar o tempo
      
      if(counter == datador_liga && hab_datador && !flag_espera_pdt){digitalWrite(out_datador,true); datador_off = (datador_tempo * velocidade / 60);}
-     if(datador_off <= 0){digitalWrite(out_datador,false);} datador_off--;
+     if(datador_off <= 0){digitalWrite(out_datador,false);} datador_off--;                                                                                 //decrementa o tempo e desliga a saida quando zerar o tempo
      
      if(counter == resfriamento_liga && hab_resfriamento){
       digitalWrite(out_resfriamento,true); resfriamento_off = (resfriamento_tempo * velocidade / 60);
-      if(flag_espera_pdt)resfriamento_off += 300;       // se a maquina esta aguardando a balança aumenta o tempo do resfriamento para nao queimar a fita vertical.                                                
+      if(flag_espera_pdt)resfriamento_off += 300;                                                                                                          // se a maquina esta aguardando a balança aumenta o tempo do resfriamento para nao queimar a fita vertical.                                                
      }
-     if(resfriamento_off <= 0){digitalWrite(out_resfriamento,false);} resfriamento_off--;
+     if(resfriamento_off <= 0){digitalWrite(out_resfriamento,false);} resfriamento_off--;//decrementa o tempo e desliga a saida quando zerar o tempo
 
      if(counter == temperaturav_liga && hab_temperaturav){digitalWrite(out_temperaturav,true); temperaturav_off = (temperaturav_tempo * velocidade / 60);}
-     if(temperaturav_off <= 0 && flag_p_aquecimento){digitalWrite(out_temperaturav,false);} temperaturav_off--;
+     if(temperaturav_off <= 0 && flag_p_aquecimento){digitalWrite(out_temperaturav,false);} temperaturav_off--;                                            //decrementa o tempo e desliga a saida quando zerar o tempo
 
 
         
