@@ -18,7 +18,7 @@ const char *password = "10203040";      //password do server AP
 uint8_t i;                              //variavel auxiliar do laço de repetiçao
 
 uint16_t counter = 0;                   //variavel auxiliar para o ciclo na interrupçao correspondente a confecçao de um pacote de 1...1000
-uint16_t vet[80];
+uint16_t vet[80];                       //vetor que armazena os e manipula os dados da maquina.
 
 bool flag_estado = false;               //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop principal
 bool flag_estado_ciclo = false;         //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop da interrupçao
@@ -122,15 +122,16 @@ uint16_t resfriamento_off;
 uint16_t balanca_liga;
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////  Configura interrupçao e timer 0 //////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  Configura interrupçao e timer 0 
 unsigned int timer_scaller = 0;
 unsigned int tmr = 0;
 hw_timer_t * timer = NULL;
 portMUX_TYPE timerMux = portMUX_INITIALIZER_UNLOCKED;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Inicio da interrupçao
 void cb_timer(){
@@ -197,7 +198,8 @@ void cb_timer(){
           if(counter > 1000){counter = 1; }                                   //  Reinicializa o proximo ciclo 
           
 
-}
+} 
+// FIM  da interrupçao
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -406,43 +408,43 @@ void setup(void) {
   
   Serial.begin(9600);Serial.println("Serial iniciada");
 
-  
+  //configura as saidas
   pinMode(out_shorizontal,OUTPUT);pinMode(out_svertical,OUTPUT);pinMode(out_faca,OUTPUT);pinMode(out_resfriamento,OUTPUT);
   pinMode(out_datador,OUTPUT);pinMode(out_temperaturav,OUTPUT);pinMode(out_temperaturah,OUTPUT);pinMode(out_tracionador,OUTPUT);
   pinMode(out_balanca,OUTPUT);pinMode(out_desbobinador,OUTPUT);pinMode(out_calha,OUTPUT);
-
+  //configura as entradas
   pinMode(in_liga_desbobinador,INPUT);pinMode(in_desliga_desbobinador,INPUT);pinMode(in_fotocelula,INPUT);pinMode(in_on_off,INPUT);
   pinMode(in_descarga,INPUT);pinMode(in_emergencia,INPUT);pinMode(in_datador,INPUT);pinMode(in_bobinap,INPUT);
   pinMode(in_bobinaf,INPUT);pinMode(in_inversores,INPUT);
 
-  
+  //desliga todas as saidas
   digitalWrite(out_shorizontal,false);digitalWrite(out_svertical,false);digitalWrite(out_faca,false);digitalWrite(out_resfriamento,false);
   digitalWrite(out_datador,false);digitalWrite(out_temperaturav,false);digitalWrite(out_temperaturah,false);digitalWrite(out_tracionador,false);
   digitalWrite(out_balanca,false);digitalWrite(out_desbobinador,false);digitalWrite(out_calha,false);
 
-  EEPROM.begin(EEPROM_SIZE);                  // initialize EEPROM with predefined size
-  read_eeprom_all();                            //  CAPTURA TUDO NA EEPROM
+  EEPROM.begin(EEPROM_SIZE);                      // initialize EEPROM com o valor predefinido
+  read_eeprom_all();                              //  CAPTURA TUDO NA EEPROM
 
-  WiFi.mode(WIFI_AP);                     //  Configura Wifi no modo AP
-  WiFi.softAP(ssid, password);              //  Configura SSID e SENHA do modo AP.
+  WiFi.mode(WIFI_AP);                             //  Configura Wifi no modo AP
+  WiFi.softAP(ssid, password);                    //  Configura SSID e SENHA do modo AP.
 
 
-  server.on("/", HTTP_GET, []() {
+  server.on("/", HTTP_GET, []() {                 //envia para o cliente a pagina completa caso solicitado na porta 80
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", html_page);
   });
   
-  server.on("/ota", HTTP_GET, []() {
+  server.on("/ota", HTTP_GET, []() {              //envia para o cliente a pagina de atualizaçao caso solicitado /ota na porta 80
     server.sendHeader("Connection", "close");
     server.send(200, "text/html", html_ota);
     stopTimer();
     parageral();
   });
 
-  websockets.onEvent(webSocketEvent);     // funçao chamada quando receber um dado no websocket ("webSocketEvent()")
+  websockets.onEvent(webSocketEvent);             // funçao chamada quando receber um dado no websocket ("webSocketEvent()")
 
-  /*handling uploading firmware file *//////////////////////  OTA
-  server.on("/update", HTTP_POST, []() {
+  /*handling uploading firmware file   OTA  */
+  server.on("/update", HTTP_POST, []() {          //caso recebido um post com o arquivo.bin da inicio a atualizaçao do programa via OTA
     server.sendHeader("Connection", "close");
     server.send(200, "text/plain", (Update.hasError()) ? "FAIL" : "OK");
     ESP.restart();
@@ -481,10 +483,10 @@ if(velocidade == 0 )velocidade = 1;                     //  Define a velocidade 
   timer_scaller = 60000 / velocidade;                   //  Atualiza o timer                           
   flag_estado = false;                                  //  INICIA MAQUINA DESLIGADA
   startTimer();                                         //  Inicia o timer
-  shorizontal_liga = 1;
-  counter = 0;
-  flag_emergencia = false;
-  alarme = "";
+  shorizontal_liga = 1;                                 //  Define como padrao a solda orizontal igual a 1 "valor fixo nao pode ser alterado por pelo usuario"
+  counter = 0;                                          //  inicia variavel zerada
+  flag_emergencia = false;                              //  inicia variavel zerada
+  alarme = "";                                          //  inicia variavel zerada
 
   //cria as 3 tasks para o envio dos dados para os clients Websockets no Core 0.
   xTaskCreatePinnedToCore(
@@ -551,20 +553,12 @@ void loop(void) {
     digitalWrite(out_temperaturav,false);
   }
   
-  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
+     
   
+  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
   if(millis() >= (currentmillis_foto + atraso_foto) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
 
-/*
-  if(millis()%33 == 0){  
-    Serial.println(i);
-    if(i > 75){flag_emergencia=false;flag_falha_datador=false;flag_falha_bobinaf=false;flag_falha_bobinap=false;flag_falha_inversor=false; alarme = "";flag_estado=false;}
-    if((flag_emergencia || flag_falha_datador || flag_falha_bobinap || flag_falha_bobinaf || flag_falha_inversor) && !digitalRead(in_on_off)){
-        i++;
-    } 
-    if(digitalRead(in_on_off))i=0;
-  }                                         
-*/
+
 }
 
 
