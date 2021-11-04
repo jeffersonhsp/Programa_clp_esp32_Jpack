@@ -481,8 +481,50 @@ char html_page[] PROGMEM = R"=====(
               flex-direction: column;
               align-items: center;
               border-radius: 4px;
-            }                   
+            }      
+.meter {
+  box-sizing: content-box;
+  height: 20px; /* Can be anything */
+  position: relative;
+  margin: 60px 0 20px 0; /* Just for demo spacing */
+  background: #555;
+  border-radius: 25px;
+  padding: 10px;
+  box-shadow: inset 0 -1px 1px rgba(255, 255, 255, 0.3);
+}
+.meter > span {
+  display: block;
+  height: 100%;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-top-left-radius: 20px;
+  border-bottom-left-radius: 20px;
+  background-color: rgb(43, 194, 83);
+  background-image: linear-gradient(
+    center bottom,
+    rgb(43, 194, 83) 37%,
+    rgb(84, 240, 84) 69%
+  );
+  box-shadow: inset 0 2px 9px rgba(255, 255, 255, 0.3),
+  inset 0 -2px 6px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+.meter > span:after,
+
+
+.orange > span {
+  background-image: linear-gradient(#f1a165, #f36d0a);
+}
+
+.nostripes > span > span,
+.nostripes > span::after {
+  background-image: none;
+}                   
         </style>
+
+
+        
         <script type="text/javascript">
             function clicked() {
                 if (!confirm("Tem certeza que deseja carregar um novo programa?")) return !1;
@@ -567,6 +609,7 @@ char html_page[] PROGMEM = R"=====(
                         t.resfriamento_liga && (document.getElementById("resfriamento_liga").innerText = t.resfriamento_liga),
                         t.resfriamento_tempo && (document.getElementById("resfriamento_tempo").innerText = t.resfriamento_tempo),
                         t.preaq_tempo && (document.getElementById("preaq_tempo").innerText = t.preaq_tempo),
+                        (document.getElementById("bargrap").style.width = ""+t.counter/10+"%"),
                         t.alarme
                             ? ((document.getElementById("id_span_alarme").innerHTML = t.alarme), (document.getElementById("id_divgeral_alarme").style.display = "flex"))
                             : ((document.getElementById("id_span_alarme").innerText = t.alarme), (document.getElementById("id_divgeral_alarme").style.display = "none")),
@@ -607,6 +650,9 @@ char html_page[] PROGMEM = R"=====(
             <div>
             
                 <div class="aba_home_e">
+                <div class="meter orange nostripes" style=" width: 90vw; margin:5vw; ">
+                  <span style="width: 18.3%;" id="bargrap"></span>
+                </div>
                   <div id="div_b2">BALANÇA<input type="checkbox" hidden="hidden" id="hab_balanca2" /> <label class="switch" onclick="send_ckbx('hab_balanca');"> </label> </div>
                   <div id="div_b2">TRACIONADOR<input type="checkbox" hidden="hidden" id="hab_tracionador2" /> <label class="switch" onclick="send_ckbx('hab_tracionador');"></label></div>
                   <div id="div_b2">CORREIAS<input type="checkbox" hidden="hidden" id="hab_calha2" /> <label class="switch" onclick="send_ckbx('hab_calha');"></label></div>
