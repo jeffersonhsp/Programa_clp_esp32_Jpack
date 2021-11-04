@@ -11,14 +11,13 @@ int currentmillis;                      //variavel para guardar o valor atual de
 
 int currentmillis_foto;                 //variavel para guardar o valor atual de millis
 int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
-int delay_rele     ;                    //corrige atraso do rele ao pedir produto a balança
 const char *ssid = "JPACK";             //ssid do server AP
 const char *password = "10203040";      //password do server AP
 
 
 uint8_t i;                              //variavel auxiliar do laço de repetiçao
 
-uint16_t counter = 0;                   //variavel auxiliar para o ciclo na interrupçao correspondente a confecçao de um pacote de 1...1000
+uint16_t counter = 0;  //variavel auxiliar para o ciclo na interrupçao correspondente a confecçao de um pacote de 1...1000
 uint16_t vet[80];                       //vetor que armazena os e manipula os dados da maquina.
 
 bool flag_estado = false;               //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop principal
@@ -35,6 +34,7 @@ bool flag_falha_bobinap = false;        //flag do erro de bobina presa
 bool flag_falha_bobinaf = false;        //flag do erro de bobina frouxa
 bool flag_falha_inversor = false;       //flag da falha dos inversores ligados em serie 
 bool flag_falha_foto = false;           //flag de falha caso nao detecte a targeta da fotocelula no filme
+bool foto_ciclo = false;
 
 
 String alarme = "";                     //string auxiliar que armazena o nome do alarme para envio do Json para a IHM
@@ -150,17 +150,18 @@ void cb_timer(){
      if(svertical_off <= 0){digitalWrite(out_svertical,false);} svertical_off--;                                                                      //decrementa o tempo e desliga a saida quando zerar o tempo
 
 
-     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60); }
-     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                                            //decrementa o tempo e desliga a saida quando zerar o tempo
-     if(counter == (balanca_liga + delay_rele) && hab_balanca)flag_pedido = true;
-     
-     if(!digitalRead(in_descarga)){flag_pedido = false;   delay_rele = counter - balanca_liga;}                         //se a balança respondeu seta flag
-     if(flag_pedido)flag_espera_pdt = true;                                                                             //se flag setada descarga ja foi feita
-     if(flag_espera_pdt && !flag_pedido){counter = (balanca_liga+delay_rele); flag_espera_pdt = false;}                 //se a maquina esta esperando produto e a descarga foi feira retoma o ciclo de onde parou quando pediu produto
-     if(!hab_balanca && flag_pedido){flag_pedido = false; flag_espera_pdt = false; counter = (balanca_liga+delay_rele);}//se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
+
+
+     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60);  }  //Aciona saida de pedido do produto e calcula tempo acionado
+     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                      //decrementa o tempo e desliga a saida quando zerar o tempo
      
      
-     
+     if(counter == (balanca_liga + 48) && hab_balanca )flag_espera_pdt = true;                                           //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
+     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = (balanca_liga + 48);  }        //se a balança respondeu seta flag e calcula o atraso do relé
+     if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + 48); }                       //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
+
+
+
      if(counter == faca_liga && hab_faca && !flag_espera_pdt){digitalWrite(out_faca,true); faca_off = (faca_tempo * velocidade / 60);}
      if(faca_off <= 0){digitalWrite(out_faca,false);} faca_off--;                                                                                          //decrementa o tempo e desliga a saida quando zerar o tempo
      
@@ -186,7 +187,7 @@ void cb_timer(){
      if(hab_temperaturah && !flag_emergencia)digitalWrite(out_temperaturah,true); 
        else digitalWrite(out_temperaturah,false);
           
-     
+     if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto)foto_ciclo = true; 
           
           
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          
@@ -253,13 +254,14 @@ String JSON_Data =
             + ",\"resfriamento_liga\":"+String(resfriamento_liga)
             + ",\"resfriamento_tempo\":"+String(resfriamento_tempo)
             + ",\"preaq_tempo\":"+String(pre_aquecimento)
+            + ",\"counter\":"+ counter
             + ",\"alarme\":\""+ alarme
             + "\"}";
             //for(i=0;i<5;i++){websockets.sendTXT(i,JSON_Data);  delay(20);}
             //websockets.broadcastTXT(JSON_Data);
             
             websockets.sendTXT(z,JSON_Data);  //envia o Json via Websocket para o client "z"
-            delay(100);
+            delay(30);
   }
 
 // guarda o vetor na Eeprom
@@ -385,7 +387,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if(doc["shorizontal_tempo"].as<long>()){shorizontal_tempo = doc["shorizontal_tempo"].as<long>();}
       if(doc["svertical_liga"].as<long>()){svertical_liga = doc["svertical_liga"].as<long>();}            
       if(doc["svertical_tempo"].as<long>()){svertical_tempo = doc["svertical_tempo"].as<long>();}
-      if(doc["balanca_liga"].as<long>()){t_queda = doc["balanca_liga"].as<long>(); delay_rele = 0;}
+      if(doc["balanca_liga"].as<long>()){t_queda = doc["balanca_liga"].as<long>();}
       if(doc["balanca_tempo"].as<long>()){balanca_tempo = doc["balanca_tempo"].as<long>();}
       if(doc["temperaturav_liga"].as<long>()){temperaturav_liga = doc["temperaturav_liga"].as<long>();}
       if(doc["temperaturav_tempo"].as<long>()){temperaturav_tempo = doc["temperaturav_tempo"].as<long>();}
@@ -522,6 +524,7 @@ if(velocidade == 0 )velocidade = 1;                     //  Define a velocidade 
   
 
 void loop(void) {
+  delay(1);
   server.handleClient();
   websockets.loop();
 
@@ -557,7 +560,7 @@ void loop(void) {
   
      
   
-  if(!digitalRead(in_fotocelula) && !flag_foto_millis && hab_foto){ currentmillis_foto = millis();  flag_foto_millis = true; }
+  if(foto_ciclo){ currentmillis_foto = millis();  flag_foto_millis = true; foto_ciclo = false; }
   if(millis() >= (currentmillis_foto + atraso_foto) && flag_foto_millis){digitalWrite(out_tracionador,false); tracionador_off = 0; flag_foto_millis = false;}
 
 
