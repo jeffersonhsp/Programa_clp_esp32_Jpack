@@ -609,6 +609,7 @@ char html_page[] PROGMEM = R"=====(
                         t.resfriamento_liga && (document.getElementById("resfriamento_liga").innerText = t.resfriamento_liga),
                         t.resfriamento_tempo && (document.getElementById("resfriamento_tempo").innerText = t.resfriamento_tempo),
                         t.preaq_tempo && (document.getElementById("preaq_tempo").innerText = t.preaq_tempo),
+                        t.atraso_rele && (document.getElementById("atraso_rl").innerText = t.atraso_rele),
                         (document.getElementById("bargrap").style.width = ""+t.counter/10+"%"),
                         t.alarme
                             ? ((document.getElementById("id_span_alarme").innerHTML = t.alarme), (document.getElementById("id_divgeral_alarme").style.display = "flex"))
@@ -781,6 +782,8 @@ char html_page[] PROGMEM = R"=====(
             </label>
             <div>
                 <p><input type="submit" value="Atualizar Programa" class="button" onclick="clicked();" /></p>
+                <br>
+                <a> <span id="atraso_rl">--</span> </a>
             </div>
         </section>
     </body>
