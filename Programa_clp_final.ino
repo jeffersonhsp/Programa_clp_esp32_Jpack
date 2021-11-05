@@ -11,6 +11,7 @@ int currentmillis;                      //variavel para guardar o valor atual de
 
 int currentmillis_foto;                 //variavel para guardar o valor atual de millis
 int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+int atraso_rele = 0;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
 const char *ssid = "JPACK";             //ssid do server AP
 const char *password = "10203040";      //password do server AP
 
@@ -156,9 +157,9 @@ void cb_timer(){
      if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                      //decrementa o tempo e desliga a saida quando zerar o tempo
      
      
-     if(counter == (balanca_liga + 48) && hab_balanca )flag_espera_pdt = true;                                           //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
-     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = (balanca_liga + 48);  }        //se a balança respondeu seta flag e calcula o atraso do relé
-     if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + 48); }                       //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
+     if(counter == (balanca_liga + atraso_rele) && hab_balanca )flag_espera_pdt = true;                                                    //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
+     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = balanca_liga + atraso_rele;    atraso_rele = counter - balanca_liga; }        //se a balança respondeu seta flag e calcula o atraso do relé
+     if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + atraso_rele); }                       //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
 
 
 
@@ -254,6 +255,7 @@ String JSON_Data =
             + ",\"resfriamento_liga\":"+String(resfriamento_liga)
             + ",\"resfriamento_tempo\":"+String(resfriamento_tempo)
             + ",\"preaq_tempo\":"+String(pre_aquecimento)
+            + ",\"atraso_rele\":"+String(atraso_rele)
             + ",\"counter\":"+ counter
             + ",\"alarme\":\""+ alarme
             + "\"}";
@@ -261,7 +263,7 @@ String JSON_Data =
             //websockets.broadcastTXT(JSON_Data);
             
             websockets.sendTXT(z,JSON_Data);  //envia o Json via Websocket para o client "z"
-            delay(30);
+            delay(50);
   }
 
 // guarda o vetor na Eeprom
@@ -490,7 +492,9 @@ if(velocidade == 0 )velocidade = 1;                     //  Define a velocidade 
   shorizontal_liga = 1;                                 //  Define como padrao a solda orizontal igual a 1 "valor fixo nao pode ser alterado por pelo usuario"
   counter = 0;                                          //  inicia variavel zerada
   flag_emergencia = false;                              //  inicia variavel zerada
+  atraso_rele = 30;
   alarme = "";                                          //  inicia variavel zerada
+  
 
   //cria as 3 tasks para o envio dos dados para os clients Websockets no Core 0.
   xTaskCreatePinnedToCore(
@@ -524,7 +528,6 @@ if(velocidade == 0 )velocidade = 1;                     //  Define a velocidade 
   
 
 void loop(void) {
-  delay(1);
   server.handleClient();
   websockets.loop();
 
