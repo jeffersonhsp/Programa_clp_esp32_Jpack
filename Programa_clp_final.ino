@@ -157,14 +157,14 @@ void cb_timer(){
 
 
      if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60);  flag_cal_atraso = true; }  //Aciona saida de pedido do produto e calcula tempo acionado
-     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                           //decrementa o tempo e desliga a saida quando zerar o tempo
+     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                  //decrementa o tempo e desliga a saida quando zerar o tempo
 
      
-     if(counter == (balanca_liga + atraso_rele) && hab_balanca )flag_espera_pdt = true;                                                    //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
-     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = balanca_liga + atraso_rele; }        //se a balança respondeu seta flag e calcula o atraso do relé
-     if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + atraso_rele); }                       //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
+     if(counter == (balanca_liga + atraso_rele) && hab_balanca )flag_espera_pdt = true;                                     //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
+     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = balanca_liga + atraso_rele; }     //se a balança respondeu seta flag e calcula o atraso do relé
+     if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + atraso_rele); }                 //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
 
-     if(!digitalRead(in_descarga) && flag_cal_atraso){ flag_cal_atraso = false;  atraso_rele_aux = counter - balanca_liga; }
+     if(!digitalRead(in_descarga) && flag_cal_atraso){ flag_cal_atraso = false;  atraso_rele_aux = counter - balanca_liga; }//salva o atraso do rele no momento que a balança responde
 
 
      
@@ -206,7 +206,12 @@ void cb_timer(){
           
           if(counter >= 1 && counter <= 1000)counter++;                       //  Incrementa a variavel dos ciclos
           
-          if(counter > 1000){counter = 1;   atraso_rele = atraso_rele_aux; }  //  Reinicializa o proximo ciclo e recalcula o atraso do rele
+          if(counter > 1000){  // se (acabou o ciclo?)
+              counter = 1;                                          // reinicia o proximo ciclo
+              atraso_rele = atraso_rele_aux;                        // calcula atraso do rele
+              balanca_liga = 1000 - (t_queda * velocidade / 60);    // atualiza  o tempo de queda
+              faca_on = (faca_liga * velocidade / 60);              // atualiza tempo da faca
+          } 
           
 
 } 
@@ -400,7 +405,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if(doc["balanca_tempo"].as<long>()){balanca_tempo = doc["balanca_tempo"].as<long>();}
       if(doc["temperaturav_liga"].as<long>()){temperaturav_liga = doc["temperaturav_liga"].as<long>();}
       if(doc["temperaturav_tempo"].as<long>()){temperaturav_tempo = doc["temperaturav_tempo"].as<long>();}
-      if(doc["faca_liga"].as<long>()){faca_liga = doc["faca_liga"].as<long>();    faca_on = (faca_liga * velocidade / 60); }
+      if(doc["faca_liga"].as<long>()){faca_liga = doc["faca_liga"].as<long>();}
       if(doc["faca_tempo"].as<long>()){faca_tempo = doc["faca_tempo"].as<long>();}
       if(doc["datador_liga"].as<long>()){datador_liga = doc["datador_liga"].as<long>();}
       if(doc["datador_tempo"].as<long>()){datador_tempo = doc["datador_tempo"].as<long>();}
@@ -410,8 +415,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if(doc["preaq_tempo"].as<long>()){pre_aquecimento = doc["preaq_tempo"].as<long>();}
  
       stopTimer(); write_eeprom_all(); startTimer();        // salva tudo na eeprom parando o timer para nao haver conflito na gravaçao
-      balanca_liga = 1000 - (t_queda * velocidade / 60);    // atualiza  o tempo de queda
-
     }
   }
 }
