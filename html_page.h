@@ -783,7 +783,7 @@ char html_page[] PROGMEM = R"=====(
             <div>
                 <p><input type="submit" value="Atualizar Programa" class="button" onclick="clicked();" /></p>
                 <br>
-                <a> <span id="atraso_rl">--</span> </a>
+                <a> Atraso do relé: <span id="atraso_rl">--</span> </a>
             </div>
         </section>
     </body>
