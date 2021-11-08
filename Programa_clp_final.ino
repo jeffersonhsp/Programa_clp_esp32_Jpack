@@ -8,18 +8,19 @@
 #include "html_page.h"
 
 int currentmillis;                      //variavel para guardar o valor atual de millis
-
 int currentmillis_foto;                 //variavel para guardar o valor atual de millis
-int atraso_foto = 100;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
-int atraso_rele = 0;                  //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+
+uint16_t atraso_foto = 100;             //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+uint16_t atraso_rele = 0;               //atraso para fotocelula de 100ms para corrigir o ajuste mecanico da maquina
+uint16_t counter = 0; 
+uint16_t faca_on = 0;
+uint16_t atraso_rele_aux = 0; 
+uint16_t vet[80];                       //vetor que armazena os e manipula os dados da maquina.
+
 const char *ssid = "JPACK";             //ssid do server AP
 const char *password = "10203040";      //password do server AP
 
-
 uint8_t i;                              //variavel auxiliar do laço de repetiçao
-
-uint16_t counter = 0;  //variavel auxiliar para o ciclo na interrupçao correspondente a confecçao de um pacote de 1...1000
-uint16_t vet[80];                       //vetor que armazena os e manipula os dados da maquina.
 
 bool flag_estado = false;               //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop principal
 bool flag_estado_ciclo = false;         //flag que guarda o estado de funcionamento da maquina ligada ou desligada no loop da interrupçao
@@ -36,7 +37,7 @@ bool flag_falha_bobinaf = false;        //flag do erro de bobina frouxa
 bool flag_falha_inversor = false;       //flag da falha dos inversores ligados em serie 
 bool flag_falha_foto = false;           //flag de falha caso nao detecte a targeta da fotocelula no filme
 bool foto_ciclo = false;
-
+bool flag_cal_atraso = false;
 
 String alarme = "";                     //string auxiliar que armazena o nome do alarme para envio do Json para a IHM
 
@@ -153,17 +154,23 @@ void cb_timer(){
 
 
 
-     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60);  }  //Aciona saida de pedido do produto e calcula tempo acionado
-     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                      //decrementa o tempo e desliga a saida quando zerar o tempo
-     
+
+
+     if(counter == balanca_liga && hab_balanca){digitalWrite(out_balanca,true); balanca_off = (balanca_tempo * velocidade / 60);  flag_cal_atraso = true; }  //Aciona saida de pedido do produto e calcula tempo acionado
+     if(balanca_off <= 0){digitalWrite(out_balanca,false);} balanca_off--;                                                           //decrementa o tempo e desliga a saida quando zerar o tempo
+
      
      if(counter == (balanca_liga + atraso_rele) && hab_balanca )flag_espera_pdt = true;                                                    //se o "ciclo = tempo da balança" com o "atraso do rele" seta a flag para desabilitar outros acionamentos
-     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = balanca_liga + atraso_rele;    atraso_rele = counter - balanca_liga; }        //se a balança respondeu seta flag e calcula o atraso do relé
+     if(!digitalRead(in_descarga) && flag_espera_pdt){flag_espera_pdt = false;  counter = balanca_liga + atraso_rele; }        //se a balança respondeu seta flag e calcula o atraso do relé
      if(!hab_balanca && flag_espera_pdt){flag_espera_pdt = false; counter = (balanca_liga + atraso_rele); }                       //se foi desabilitado a balança pelo usuario retoma o funcionamento sem produto mesmo
 
+     if(!digitalRead(in_descarga) && flag_cal_atraso){ flag_cal_atraso = false;  atraso_rele_aux = counter - balanca_liga; }
 
 
-     if(counter == faca_liga && hab_faca && !flag_espera_pdt){digitalWrite(out_faca,true); faca_off = (faca_tempo * velocidade / 60);}
+     
+
+
+     if(counter == faca_on && hab_faca && !flag_espera_pdt){digitalWrite(out_faca,true); faca_off = (faca_tempo * velocidade / 60);}
      if(faca_off <= 0){digitalWrite(out_faca,false);} faca_off--;                                                                                          //decrementa o tempo e desliga a saida quando zerar o tempo
      
      if(counter == datador_liga && hab_datador && !flag_espera_pdt){digitalWrite(out_datador,true); datador_off = (datador_tempo * velocidade / 60);}
@@ -199,7 +206,7 @@ void cb_timer(){
           
           if(counter >= 1 && counter <= 1000)counter++;                       //  Incrementa a variavel dos ciclos
           
-          if(counter > 1000){counter = 1; }                                   //  Reinicializa o proximo ciclo 
+          if(counter > 1000){counter = 1;   atraso_rele = atraso_rele_aux; }  //  Reinicializa o proximo ciclo e recalcula o atraso do rele
           
 
 } 
@@ -255,7 +262,7 @@ String JSON_Data =
             + ",\"resfriamento_liga\":"+String(resfriamento_liga)
             + ",\"resfriamento_tempo\":"+String(resfriamento_tempo)
             + ",\"preaq_tempo\":"+String(pre_aquecimento)
-            + ",\"atraso_rele\":"+String(atraso_rele)
+            + ",\"atraso_rele\":"+String(atraso_rele_aux)
             + ",\"counter\":"+ counter
             + ",\"alarme\":\""+ alarme
             + "\"}";
@@ -393,7 +400,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       if(doc["balanca_tempo"].as<long>()){balanca_tempo = doc["balanca_tempo"].as<long>();}
       if(doc["temperaturav_liga"].as<long>()){temperaturav_liga = doc["temperaturav_liga"].as<long>();}
       if(doc["temperaturav_tempo"].as<long>()){temperaturav_tempo = doc["temperaturav_tempo"].as<long>();}
-      if(doc["faca_liga"].as<long>()){faca_liga = doc["faca_liga"].as<long>();}
+      if(doc["faca_liga"].as<long>()){faca_liga = doc["faca_liga"].as<long>();    faca_on = (faca_liga * velocidade / 60); }
       if(doc["faca_tempo"].as<long>()){faca_tempo = doc["faca_tempo"].as<long>();}
       if(doc["datador_liga"].as<long>()){datador_liga = doc["datador_liga"].as<long>();}
       if(doc["datador_tempo"].as<long>()){datador_tempo = doc["datador_tempo"].as<long>();}
@@ -486,6 +493,7 @@ void setup(void) {
 
 if(velocidade == 0 )velocidade = 1;                     //  Define a velocidade igual a 1 caso seja 0, para nao dar confito no timer da interrupçao
   balanca_liga = 1000 - (t_queda * velocidade / 60);    // atualiza  o tempo de queda
+  faca_on = (faca_liga * velocidade / 60);
   timer_scaller = 60000 / velocidade;                   //  Atualiza o timer                           
   flag_estado = false;                                  //  INICIA MAQUINA DESLIGADA
   startTimer();                                         //  Inicia o timer
